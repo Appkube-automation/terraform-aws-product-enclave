@@ -1,16 +1,22 @@
 provider "aws" {
-  region = "us-east-1"  
+  region = var.region  
 }
 
 module "vpc" {
   source     = "git::https://github.com/tmknom/terraform-aws-vpc.git?ref=tags/2.0.1"
-  cidr_block = "10.255.0.0/16"
-  name       = "eks_cluster_vpc"
+  #cidr_block = "10.255.0.0/16"
+  cidr_block = var.vpc_cidr
+  name       = var.vpc_name
 
-  public_subnet_cidr_blocks  = ["10.255.0.0/24", "10.255.1.0/24","10.255.2.0/24"]
-  public_availability_zones  = ["us-east-1a", "us-east-1c","us-east-1e"]
-  private_subnet_cidr_blocks = ["10.255.64.0/24", "10.255.65.0/24", "10.255.66.0/24"]
-  private_availability_zones = ["us-east-1a", "us-east-1c","us-east-1e"]
+  #public_subnet_cidr_blocks  = ["10.255.0.0/24", "10.255.1.0/24","10.255.2.0/24"]
+  #public_availability_zones  = ["us-east-1a", "us-east-1c","us-east-1e"]
+  #private_subnet_cidr_blocks = ["10.255.64.0/24", "10.255.65.0/24", "10.255.66.0/24"]
+  #private_availability_zones = ["us-east-1a", "us-east-1c","us-east-1e"]
+
+  public_subnet_cidr_blocks  = var.public_subnet_cidr_blocks
+  public_availability_zones  = var.public_availability_zones
+  private_subnet_cidr_blocks = var.private_subnet_cidr_blocks
+  private_availability_zones = var.private_availability_zones
 
   instance_tenancy        = "default"
   enable_dns_support      = false
@@ -27,42 +33,42 @@ module "vpc" {
 
 resource "aws_lb" "eks_cluster_lb" {
   internal           = false
-  load_balancer_type = "application"
+  load_balancer_type = var.load_balancer_type  
   subnets            = module.vpc.public_subnet_ids
   tags = {
     Environment = "eks_cluster_lb"
   }
 }
 
-resource "aws_wafv2_regex_pattern_set" "example" {
-  name        = "example"
-  description = "Example regex pattern set"
-  scope       = "REGIONAL"
+# resource "aws_wafv2_regex_pattern_set" "example" {
+#   name        = "example"
+#   description = "Example regex pattern set"
+#   scope       = "REGIONAL"
 
-  regular_expression {
-    regex_string = "one"
-  }
+#   regular_expression {
+#     regex_string = "one"
+#   }
 
-  regular_expression {
-    regex_string = "two"
-  }
+#   regular_expression {
+#     regex_string = "two"
+#   }
 
-  tags = {
-    Environment = "dev"
-  }
-}
+#   tags = {
+#     Environment = "dev"
+#   }
+# }
 
-resource "aws_wafv2_ip_set" "example" {
-  name               = "devipset"
-  description        = "Dev IP set"
-  scope              = "REGIONAL"
-  ip_address_version = "IPV4"
-  addresses          = ["1.2.3.4/32", "5.6.7.8/32"]
+# resource "aws_wafv2_ip_set" "example" {
+#   name               = "devipset"
+#   description        = "Dev IP set"
+#   scope              = "REGIONAL"
+#   ip_address_version = "IPV4"
+#   addresses          = ["1.2.3.4/32", "5.6.7.8/32"]
 
-  tags = {
-    Environment = "dev"
-  }
-}
+#   tags = {
+#     Environment = "dev"
+#   }
+# }
 
 # resource "aws_wafv2_rule_group" "dev_rule_group" {
 #   name     = "dev-rule"
