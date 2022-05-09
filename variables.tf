@@ -1,6 +1,6 @@
 variable "web_acl_name" {
   type = string
-  default = "testtfACL"
+  # default = "testtfACL"
 }
 variable "web_acl_metics" {
   type = string
@@ -28,7 +28,7 @@ variable "region" {
 }
 variable "vpc_name" {
   type = string
-  default = "eks_cluster_vpc"
+  # default = "eks_cluster_vpc"
 }
 variable "vpc_cidr" {
       description = "Kubernetes cluster CIDR notation for vpc."
@@ -43,11 +43,11 @@ variable "vpc_cidr" {
 variable "public_subnet_cidr_blocks" {
   description = "Available cidr blocks for public subnets."
   type        = list(string)
-  default     = [
-    "10.255.0.0/24",
-    "10.255.1.0/24",
-    "10.255.2.0/24",
-  ]
+  # default     = [
+  #   "10.255.0.0/24",
+  #   "10.255.1.0/24",
+  #   "10.255.2.0/24",
+  # ]
 }
 variable "public_availability_zones" {
   description = "A list of availability zones names or ids in the region"
@@ -61,11 +61,11 @@ variable "public_availability_zones" {
 variable "private_subnet_cidr_blocks" {
   description = "Available cidr blocks for private subnets."
   type        = list(string)
-  default     = [
-    "10.255.64.0/24",
-    "10.255.65.0/24",
-    "10.255.66.0/24"
-  ]
+  # default     = [
+  #   "10.255.64.0/24",
+  #   "10.255.65.0/24",
+  #   "10.255.66.0/24"
+  # ]
 }
 variable "private_availability_zones" {
   description = "A list of availability zones names or ids in the region"
@@ -79,4 +79,8 @@ variable "private_availability_zones" {
 variable "load_balancer_type" {
   type = string
   default = "application"
+}
+
+variable "api_gateway_name" {
+  type = string
 }
