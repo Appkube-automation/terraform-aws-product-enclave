@@ -355,6 +355,6 @@ resource "aws_wafv2_web_acl_association" "example" {
   web_acl_arn  = aws_wafv2_web_acl.dev_acl.arn
 }
 
-output "base_url" {
-  value = aws_api_gateway_deployment.apideploy.invoke_url
-}
+# output "base_url" {
+#   value = aws_api_gateway_deployment.apideploy.invoke_url
+# }
