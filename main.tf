@@ -26,6 +26,13 @@ module "vpc" {
   enabled_nat_gateway        = true
   enabled_single_nat_gateway = true
 
+  #uncomment the following lines to enable flow logs for the VPC
+  #we need to provide an s3 bucket name to log storage
+  
+  # enable_flow_log           = true
+  # flow_log_destination_type = "s3"
+  # flow_log_destination_arn  = var.log_bucket_name
+
   tags = {
     Environment = "eks_cluster_vpc"
   }
@@ -98,6 +105,27 @@ resource "aws_lb" "eks_cluster_lb" {
 #   }
 # }
 
+resource "aws_wafv2_regex_pattern_set" "common" {
+  name  = "Common"
+  scope = "REGIONAL"
+
+  regular_expression {
+    regex_string = "^.*(some-url).*((.domain)+)\\.com$"
+  }
+
+  #  Add here additional regular expressions for other endpoints, they are merging with OR operator, e.g.
+
+  /*
+   regular_expression {
+      regex_string = "^.*(jenkins).*((.domain)+)\\.com$"
+   }
+   */
+
+  tags = {
+    Environment = "dev"
+  }
+}
+
 resource "aws_wafv2_web_acl" "dev_acl" {
   name        = "devacl-managed"
   description = "alb and apigateway protect."
@@ -109,7 +137,7 @@ resource "aws_wafv2_web_acl" "dev_acl" {
 
   rule {
     name     = "rule-1"
-    priority = 1
+    priority = 10
 
     override_action {
       count {}
@@ -142,6 +170,103 @@ resource "aws_wafv2_web_acl" "dev_acl" {
       sampled_requests_enabled   = false
     }
   }
+  rule {
+    name     = "AWS-AWSManagedRulesCommonRuleSet"
+    priority = 1
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "AWS-AWSManagedRulesCommonRuleSet"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # rule {
+  #   name     = "AWS-AWSManagedRulesLinuxRuleSet"
+  #   priority = 2
+
+  #   statement {
+  #     managed_rule_group_statement {
+  #       name        = "AWSManagedRulesLinuxRuleSet"
+  #       vendor_name = "AWS"
+  #     }
+  #   }
+
+  #   override_action {
+  #     none {}
+  #   }
+
+  #   visibility_config {
+  #     cloudwatch_metrics_enabled = true
+  #     metric_name                = "AWS-AWSManagedRulesLinuxRuleSet"
+  #     sampled_requests_enabled   = true
+  #   }
+  # }
+
+  # rule {
+  #   name     = "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+  #   priority = 3
+
+  #   override_action {
+  #     none {}
+  #   }
+
+  #   statement {
+  #     managed_rule_group_statement {
+  #       name        = "AWSManagedRulesKnownBadInputsRuleSet"
+  #       vendor_name = "AWS"
+  #     }
+  #   }
+
+  #   visibility_config {
+  #     cloudwatch_metrics_enabled = true
+  #     metric_name                = "AWS-AWSManagedRulesKnownBadInputsRuleSet"
+  #     sampled_requests_enabled   = true
+  #   }
+  # }
+
+  # rule {
+  #   name     = "PreventHostInjections"
+  #   priority = 0
+
+  #   statement {
+  #     regex_pattern_set_reference_statement {
+  #       arn = aws_wafv2_regex_pattern_set.common.arn
+
+  #       field_to_match {
+  #         single_header {
+  #           name = "host"
+  #         }
+  #       }
+
+  #       text_transformation {
+  #         priority = 0
+  #         type     = "NONE"
+  #       }
+  #     }
+  #   }
+
+  #   action {
+  #     allow {}
+  #   }
+
+  #   visibility_config {
+  #     cloudwatch_metrics_enabled = true
+  #     metric_name                = "PreventHostInjections"
+  #     sampled_requests_enabled   = true
+  #   }
+  # }
 
   tags = {
     Environment = "dev"
@@ -350,8 +475,13 @@ resource "aws_api_gateway_stage" "setstage" {
   stage_name    = "setstage"
 }
 
-resource "aws_wafv2_web_acl_association" "example" {
+resource "aws_wafv2_web_acl_association" "apitowaf" {
   resource_arn = aws_api_gateway_stage.setstage.arn
+  web_acl_arn  = aws_wafv2_web_acl.dev_acl.arn
+}
+
+resource "aws_wafv2_web_acl_association" "lbtowaf" {
+  resource_arn = aws_lb.eks_cluster_lb.arn
   web_acl_arn  = aws_wafv2_web_acl.dev_acl.arn
 }
 
